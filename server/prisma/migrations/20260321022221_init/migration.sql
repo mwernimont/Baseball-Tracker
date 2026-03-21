@@ -1,0 +1,141 @@
+-- CreateTable
+CREATE TABLE "League" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Season" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "leagueId" INTEGER NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Season_leagueId_fkey" FOREIGN KEY ("leagueId") REFERENCES "League" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "TeamSeason" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "seasonId" INTEGER NOT NULL,
+    "teamId" INTEGER NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "TeamSeason_seasonId_fkey" FOREIGN KEY ("seasonId") REFERENCES "Season" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "TeamSeason_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Team" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Player" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "birthDate" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "PlayerTeamSeason" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "teamSeasonId" INTEGER NOT NULL,
+    "playerId" INTEGER NOT NULL,
+    "jerseyNumber" INTEGER,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "PlayerTeamSeason_teamSeasonId_fkey" FOREIGN KEY ("teamSeasonId") REFERENCES "TeamSeason" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "PlayerTeamSeason_playerId_fkey" FOREIGN KEY ("playerId") REFERENCES "Player" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Game" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "date" DATETIME NOT NULL,
+    "homeTeamSeasonId" INTEGER NOT NULL,
+    "awayTeamSeasonId" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'scheduled',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Game_homeTeamSeasonId_fkey" FOREIGN KEY ("homeTeamSeasonId") REFERENCES "TeamSeason" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Game_awayTeamSeasonId_fkey" FOREIGN KEY ("awayTeamSeasonId") REFERENCES "TeamSeason" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "AtBat" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "gameId" INTEGER NOT NULL,
+    "batterId" INTEGER NOT NULL,
+    "pitcherId" INTEGER NOT NULL,
+    "inning" INTEGER NOT NULL,
+    "topOfInning" BOOLEAN NOT NULL,
+    "sequence" INTEGER NOT NULL,
+    "outcome" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "AtBat_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "AtBat_batterId_fkey" FOREIGN KEY ("batterId") REFERENCES "Player" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "AtBat_pitcherId_fkey" FOREIGN KEY ("pitcherId") REFERENCES "Player" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Pitch" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "atBatId" INTEGER NOT NULL,
+    "sequence" INTEGER NOT NULL,
+    "result" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Pitch_atBatId_fkey" FOREIGN KEY ("atBatId") REFERENCES "AtBat" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "FieldingPlay" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "atBatId" INTEGER NOT NULL,
+    "playString" TEXT NOT NULL,
+    "result" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "FieldingPlay_atBatId_fkey" FOREIGN KEY ("atBatId") REFERENCES "AtBat" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "BaseStateChange" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "atBatId" INTEGER NOT NULL,
+    "baseRunnerId" INTEGER NOT NULL,
+    "previousBase" TEXT NOT NULL,
+    "currentBase" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "BaseStateChange_atBatId_fkey" FOREIGN KEY ("atBatId") REFERENCES "AtBat" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "BaseStateChange_baseRunnerId_fkey" FOREIGN KEY ("baseRunnerId") REFERENCES "Player" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Substitution" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "gameId" INTEGER NOT NULL,
+    "playerOutId" INTEGER NOT NULL,
+    "playerInId" INTEGER NOT NULL,
+    "position" TEXT NOT NULL,
+    "reason" TEXT,
+    "inning" INTEGER NOT NULL,
+    "topOfInning" BOOLEAN NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Substitution_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Substitution_playerOutId_fkey" FOREIGN KEY ("playerOutId") REFERENCES "Player" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Substitution_playerInId_fkey" FOREIGN KEY ("playerInId") REFERENCES "Player" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "EventLog" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "gameId" INTEGER NOT NULL,
+    "eventType" TEXT NOT NULL,
+    "payload" TEXT NOT NULL,
+    "sequence" INTEGER NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "EventLog_gameId_fkey" FOREIGN KEY ("gameId") REFERENCES "Game" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);

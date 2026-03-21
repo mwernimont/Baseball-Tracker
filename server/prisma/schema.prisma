@@ -1,0 +1,167 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model League {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+
+  seasons Season[]
+}
+
+model Season {
+  id        Int      @id @default(autoincrement())
+  name      String
+  year      Int
+  leagueId  Int
+  createdAt DateTime @default(now())
+
+  league      League       @relation(fields: [leagueId], references: [id])
+  teamSeasons TeamSeason[]
+}
+
+model TeamSeason {
+  id        Int      @id @default(autoincrement())
+  seasonId  Int
+  teamId    Int
+  createdAt DateTime @default(now())
+
+  season            Season             @relation(fields: [seasonId], references: [id])
+  team              Team               @relation(fields: [teamId], references: [id])
+  homeGames         Game[]             @relation("HomeTeam")
+  awayGames         Game[]             @relation("AwayTeam")
+  playerTeamSeasons PlayerTeamSeason[]
+}
+
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+
+  teamSeasons TeamSeason[]
+}
+
+model Player {
+  id        Int       @id @default(autoincrement())
+  firstName String
+  lastName  String
+  birthDate DateTime?
+  createdAt DateTime  @default(now())
+
+  playerTeamSeasons PlayerTeamSeason[]
+  atBatsAsBatter    AtBat[]            @relation("Batter")
+  atBatsAsPitcher   AtBat[]            @relation("Pitcher")
+  baseStateChanges  BaseStateChange[]
+  substitutionsOut  Substitution[]     @relation("PlayerOut")
+  substitutionsIn   Substitution[]     @relation("PlayerIn")
+}
+
+model PlayerTeamSeason {
+  id           Int      @id @default(autoincrement())
+  teamSeasonId Int
+  playerId     Int
+  jerseyNumber Int?
+  createdAt    DateTime @default(now())
+
+  teamSeason TeamSeason @relation(fields: [teamSeasonId], references: [id])
+  player     Player     @relation(fields: [playerId], references: [id])
+}
+
+model Game {
+  id               Int      @id @default(autoincrement())
+  date             DateTime
+  homeTeamSeasonId Int
+  awayTeamSeasonId Int
+  status           String   @default("scheduled")
+  createdAt        DateTime @default(now())
+
+  homeTeamSeason TeamSeason     @relation("HomeTeam", fields: [homeTeamSeasonId], references: [id])
+  awayTeamSeason TeamSeason     @relation("AwayTeam", fields: [awayTeamSeasonId], references: [id])
+  atBats         AtBat[]
+  eventLog       EventLog[]
+  substitutions  Substitution[]
+}
+
+model AtBat {
+  id          Int      @id @default(autoincrement())
+  gameId      Int
+  batterId    Int
+  pitcherId   Int
+  inning      Int
+  topOfInning Boolean
+  sequence    Int
+  outcome     String?
+  createdAt   DateTime @default(now())
+
+  game             Game              @relation(fields: [gameId], references: [id])
+  batter           Player            @relation("Batter", fields: [batterId], references: [id])
+  pitcher          Player            @relation("Pitcher", fields: [pitcherId], references: [id])
+  pitches          Pitch[]
+  fieldingPlays    FieldingPlay[]
+  baseStateChanges BaseStateChange[]
+}
+
+model Pitch {
+  id        Int      @id @default(autoincrement())
+  atBatId   Int
+  sequence  Int
+  result    String
+  createdAt DateTime @default(now())
+
+  atBat AtBat @relation(fields: [atBatId], references: [id])
+}
+
+model FieldingPlay {
+  id         Int      @id @default(autoincrement())
+  atBatId    Int
+  playString String
+  result     String?
+  createdAt  DateTime @default(now())
+
+  atBat AtBat @relation(fields: [atBatId], references: [id])
+}
+
+model BaseStateChange {
+  id           Int      @id @default(autoincrement())
+  atBatId      Int
+  baseRunnerId Int
+  previousBase String
+  currentBase  String
+  action       String
+  createdAt    DateTime @default(now())
+
+  atBat      AtBat  @relation(fields: [atBatId], references: [id])
+  baseRunner Player @relation(fields: [baseRunnerId], references: [id])
+}
+
+model Substitution {
+  id          Int      @id @default(autoincrement())
+  gameId      Int
+  playerOutId Int
+  playerInId  Int
+  position    String
+  reason      String?
+  inning      Int
+  topOfInning Boolean
+  createdAt   DateTime @default(now())
+
+  game      Game   @relation(fields: [gameId], references: [id])
+  playerOut Player @relation("PlayerOut", fields: [playerOutId], references: [id])
+  playerIn  Player @relation("PlayerIn", fields: [playerInId], references: [id])
+}
+
+model EventLog {
+  id        Int      @id @default(autoincrement())
+  gameId    Int
+  eventType String
+  payload   String
+  sequence  Int
+  createdAt DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id])
+}
